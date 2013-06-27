@@ -2,19 +2,19 @@
  * Exploration 5 - Good
  *
  * Samuel Mcaravey - mca12004
- *
+ * 
  *
  *******************************
- *            LOG
+ *            LOG 
  *******************************
- *
- *
- *
- *
- *
+ * 
+ * 
+ * 
+ * 
+ * 
  * 6-27-2013
  *    -Finished creating the C++ test harness.
- *    -Ran the exact numbers through an equivilent
+ *    -Ran the exact numbers through an equivilent 
  *        Java program for verification.
  *    -Discovered that energy is the number of collisions!
  *        "It is also necessary
@@ -26,9 +26,9 @@
  *			the crystal-growth example."
  *    -Tried to turn the energy function into a memorizing function
  *        to see if this will help avoid the plateu in small data sets.
- *
- *
- *
+ * 
+ * 
+ * 
  */
 
 #include <cmath>
@@ -142,9 +142,9 @@ int getCollisions(int x, int y, int z, int w)
 int getCollisions(int* hashValues)
 {
 	return getCollisions(
-		hashValues[0],
-		hashValues[1],
-		hashValues[2],
+		hashValues[0], 
+		hashValues[1], 
+		hashValues[2], 
 		hashValues[3]);
 }
 /*===========================End Test Harness===========================*/
@@ -243,7 +243,7 @@ void simulateAnnealing()//int* initialSequence)
 
 		temperature *= 0.9;
 	}
-
+	
 	cout << "======================================" << endl
 		 << "     And the winning results are" << endl
 	     << "======================================" << endl;
@@ -254,7 +254,7 @@ void simulateAnnealing()//int* initialSequence)
 int main(int argc, char* argv[])
 {
 	vector<string> wordList;
-	std::ifstream infile("dictionary.txt");
+	std::ifstream infile("C:\\Users\\Samuel McAravey\\SkyDrive\\Documents\\BYUI\\Spring 2013\\CS 306 - Algorithms\\Explorations\\good\\good\\dictionary.txt");
 	string word;
 	while (infile >> word)
 	{
@@ -272,5 +272,5 @@ int main(int argc, char* argv[])
 
 	simulateAnnealing();//initialSequence);
 	//int collisions = getCollisions(9, 14, 4, 10);
-	//cout << "Collisions: " << collisions << endl;
+	//cout << "Collisions: " << collisions << endl; 
 }
