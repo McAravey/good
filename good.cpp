@@ -30,7 +30,7 @@
  * 
  * 
  */
-
+#include <stdlib.h>
 #include <cmath>
 #include <iostream>
 #include <fstream>
@@ -158,11 +158,11 @@ int upperLimit = 30;
 int* pickAlteration()
 {
 	int* alterations = new int[4];
-	alterations[0] = hashValues[0];
-	alterations[1] = hashValues[1];
-	alterations[2] = hashValues[2];
-	alterations[3] = hashValues[3];
-
+	alterations[0] = rand() % upperLimit;//hashValues[0];
+	alterations[1] = rand() % upperLimit;//hashValues[1];
+	alterations[2] = rand() % upperLimit;//hashValues[2];
+	alterations[3] = rand() % upperLimit;//hashValues[3];
+	
 	int changeIndex = rand() % 4;
 	int add = rand() % 2;
 	int amount = (rand() % 2) + 1;
@@ -254,7 +254,7 @@ void simulateAnnealing()//int* initialSequence)
 int main(int argc, char* argv[])
 {
 	vector<string> wordList;
-	std::ifstream infile("C:\\Users\\Samuel McAravey\\SkyDrive\\Documents\\BYUI\\Spring 2013\\CS 306 - Algorithms\\Explorations\\good\\good\\dictionary.txt");
+	std::ifstream infile("C:\\Users\\Jonathan\\Desktop\\cs306\\good\\dictionary.txt");
 	string word;
 	while (infile >> word)
 	{
