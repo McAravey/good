@@ -10,9 +10,9 @@
 #include <cstring>
 using namespace std;
 
-//#define windows
+#define windows
 
-int size = 1048576;
+int size = 32768;//1048576;
 
 struct State
 {
@@ -41,13 +41,26 @@ public:
 		string word;
 
 		cout << "Initializing memory hash..." << endl;
-		while (infile >> word)
+		while (getline(infile, word))
 		{
 			wordHashes.push_back(hashString(word));
 		}
 		cout << "Completed initializing memory hash." << endl;
 
 		numOfWords = wordHashes.size();
+		//hashTable = new bool[size];
+	}
+
+	Hash(int inputSize)
+	{ 
+		cout << "Initializing memory hash..." << endl;
+		for (int i = 0; i < inputSize; i++)
+		{
+			wordHashes.push_back(rand());
+		}
+		cout << "Completed initializing memory hash." << endl;
+
+		numOfWords = inputSize;
 		//hashTable = new bool[size];
 	}
 	~Hash()
@@ -146,7 +159,7 @@ public:
 	State simulate()
 	{
 		currentEnergy = currentHash.getCollisions(currentState, hashTable);
-		temperature = 100000;//currentEnergy;
+		temperature = 1000000;//currentEnergy;
 		int runLimit = 400;
 		int alterationLimit = 40;
 
@@ -266,8 +279,9 @@ void* work(void* data)
 int main(int argc, char* argv[])
 {
 	int threadCount = 10;
-	//Hash* h = new Hash("bigdictionary.txt");
+
 	commonHash = new Hash("bigdictionary.txt");
+	//commonHash = new Hash(32768);
 	bool* hashTable = new bool[size];
 	State baseState;
 	baseState.x = 9;
