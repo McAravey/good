@@ -1,35 +1,35 @@
 /*******************************
- * Exploration 5 - Good
- *
- * Samuel Mcaravey - mca12004
- * 
- *
- *******************************
- *            LOG 
- *******************************
- * 
- * 
- * 
- * 
- * 
- * 6-27-2013
- *    -Finished creating the C++ test harness.
- *    -Ran the exact numbers through an equivilent 
- *        Java program for verification.
- *    -Discovered that energy is the number of collisions!
- *        "It is also necessary
- *			for you to be able to generate a number
- *			that tells how well any given sequence
- *			works; the better the solution, the smaller
- *			this number must be. This number is
- *			analogous to the energy of the crystal in
- *			the crystal-growth example."
- *    -Tried to turn the energy function into a memorizing function
- *        to see if this will help avoid the plateu in small data sets.
- * 
- * 
- * 
- */
+* Exploration 5 - Good
+*
+* Samuel Mcaravey - mca12004
+* 
+*
+*******************************
+* LOG 
+*******************************
+* 
+* 
+* 
+* 
+* 
+* 6-27-2013
+* -Finished creating the C++ test harness.
+* -Ran the exact numbers through an equivilent 
+* Java program for verification.
+* -Discovered that energy is the number of collisions!
+* "It is also necessary
+* for you to be able to generate a number
+* that tells how well any given sequence
+* works; the better the solution, the smaller
+* this number must be. This number is
+* analogous to the energy of the crystal in
+* the crystal-growth example."
+* -Tried to turn the energy function into a memorizing function
+* to see if this will help avoid the plateu in small data sets.
+* 
+* 
+* 
+*/
 #include <stdlib.h>
 #include <cmath>
 #include <iostream>
@@ -38,239 +38,223 @@
 #include <string>
 #include <fstream>
 #include <vector>
-#include <map>
 #include <sstream>
+#include <cstring>
 using namespace std;
 
-//class Sequence
-//{
-//public:
-//	int x;
-//	int y;
-//	int z;
-//	int w;
-//};
-
 int size = 1048576;
-string* words;
-int numOfWords = 0;
-map<string, int> energyValues;
 
-/*===========================Begin Test Harness===========================*/
-string getStringValue(int x, int y, int z, int w)
+struct State
 {
-	std::ostringstream oss;
-	oss << x << y << z << w;
-	/*string s = "";
-	s += itoa(x);
-	s += itoa(y);
-	s += itoa(z);
-	s += itoa(w);*/
-	return oss.str();
-}
+	int x;
+	int y;
+	int z;
+	int w;
 
-
-int hashString(string s)
-{
-	int hash = 0;
-	int n = s.size() - 1;
-	for (int i = 0; i <= n; i++)
+	string toString()
 	{
-		//h = 31 * h + s[i]
-		//hash += s[i] * pow(31, n - i);
-		hash = s[i] + 31 * hash;
+		ostringstream ss;
+		ss << "X: " << x
+			<< " Y: " << y
+			<< " Z: " << z
+			<< " W: " << w;
+		return ss.str();
 	}
-	return hash;
-}
+};
 
-int indexFor(int h, int length)
+class Hash
 {
-	return h & (length - 1);
-}
-
-/*
-* Apply a protective hash to the original hash using the values x y z and w.
-*/
-int protectionHash(int originalHash, int x, int y, int z, int w)
-{
-	int hash = originalHash;
-
-	hash  += ~(hash << x);//9
-	hash ^= ((unsigned)hash >> y);//14
-	hash += (hash << z);//4
-	hash ^= ((unsigned)hash >> w);//10
-
-	return hash;
-}
-
-int getCollisions(int x, int y, int z, int w)
-{
-	/*string s = getStringValue(x, y, z, w);
-
-	map<string, int>::iterator it = energyValues.find(s);
-	if (it != energyValues.end())
-	{
-		return energyValues[s];
-	}*/
-
-	bool* collisionTrackers = new bool[size]; //Simply track which slot in the "hash table" have an object in it. We don't care about storing the values.
-	int totalCollisions = 0; //Track the total number of collisions for finding the best
-	//int wordCount = 0;
-
-	//std::ifstream infile("C:\\Users\\Samuel McAravey\\SkyDrive\\Documents\\BYUI\\Spring 2013\\CS 306 - Algorithms\\Explorations\\good\\good\\5letterwords.txt");
-	string word;
-
-	for (int i = 0; i < numOfWords; i++)
-	{
-		word = words[i];
-
-		int initialHash = hashString(word); //Get the initial hash from a string to an int
-		int protectedHash = protectionHash(initialHash, x, y, z, w); //Apply the extra protective hash on top of the initial hash.
-		int index = indexFor(protectedHash, size); //Get the index for the hash that matches the size of the current hash table
-
-		if (collisionTrackers[index] == true) //If there is a collision
-			totalCollisions++;
-		else
-			collisionTrackers[index] = true;
-	}
-
-	//energyValues[s] = totalCollisions;
-
-	return totalCollisions;
-}
-
-int getCollisions(int* hashValues)
-{
-	return getCollisions(
-		hashValues[0], 
-		hashValues[1], 
-		hashValues[2], 
-		hashValues[3]);
-}
-/*===========================End Test Harness===========================*/
-
-int* hashValues;
-int currentEnergy;
-double temperature;
-int upperLimit = 30;
-
-
-int* pickAlteration()
-{
-	int* alterations = new int[4];
-	alterations[0] = rand() % upperLimit;//hashValues[0];
-	alterations[1] = rand() % upperLimit;//hashValues[1];
-	alterations[2] = rand() % upperLimit;//hashValues[2];
-	alterations[3] = rand() % upperLimit;//hashValues[3];
+public:
+	Hash(string dictionary)
+	{ 
+		std::ifstream infile(dictionary.c_str());
+		string word;
 	
-	int changeIndex = rand() % 4;
-	int add = rand() % 2;
-	int amount = (rand() % 2) + 1;
-
-	if ((add == 1 && alterations[changeIndex] < upperLimit) || alterations[changeIndex] <= 0)
-		alterations[changeIndex] += amount;
-	else
-		alterations[changeIndex] -= amount;
-
-	return alterations;
-}
-
-void printResults()
-{
-	cout << "X: " << hashValues[0]
-		 << "  Y: " << hashValues[1]
-		 << "  Z: " << hashValues[2]
-		 << "  W: " << hashValues[3]
-		 << "  With an energy of: " << currentEnergy << endl;
-}
-
-void alterList(int* alteration, int newEnergy)
-{
-	currentEnergy = newEnergy;
-	hashValues = alteration;
-	printResults();
-}
-
-bool oracle(int energyDiff)
-{
-	if (energyDiff < 0)
-		return true;
-
-	if (exp((-energyDiff)/temperature) > (rand() % 2))
-		return true;
-
-	return false;
-}
-
-/*
- * Returns the number of successful alterations made.
- */
-int anneal(int runLimit, int alterationLimit)
-{
-	int alterationCount = 0;
-
-	for (int i = 0; i <= runLimit; i++)
-	{
-		int* alteration = pickAlteration();
-		int newEnergy = getCollisions(alteration);
-		int energyDiff = newEnergy - currentEnergy;
-		if (oracle(energyDiff))
+		cout << "Initializing memory hash..." << endl;
+		while (infile >> word)
 		{
-			alterList(alteration, newEnergy); //Commit changes
-			alterationCount++;
+			wordHashes.push_back(hashString(word));
 		}
-
-		if (alterationCount >= alterationLimit)
-			break;
+		cout << "Completed initializing memory hash." << endl;
+		
+		numOfWords = wordHashes.size();
+		hashTable = new bool[size];
+	}
+	~Hash()
+	{
+		delete hashTable;
 	}
 
-	return alterationLimit;
-}
-
-void simulateAnnealing()//int* initialSequence)
-{
-	//int* hashValues = initialSequence;
-	int energy = getCollisions(hashValues);
-	temperature = energy / 4; //4 = the number of items in the list of hashValues
-	int runLimit = 400;
-	int alterationLimit = 40;
-
-	for (int i = 0; i < 100; i++)
+	int getCollisions(State& state)
 	{
-		int successfulAlterations = anneal(runLimit, alterationLimit);
-		if (successfulAlterations == 0)
-			break;
+		memset(hashTable,0,sizeof(bool)*size);
 
-		temperature *= 0.9;
+		int totalCollisions = 0; //Track the total number of collisions for finding the best
+		int initialHash = 0;
+
+		//Treat the vector as an array for fast indexing.
+		//Discovered this performance hit using Visual Studio
+		//   performance analysis tools.
+		int* p = &wordHashes[0];
+		
+
+		for(int i = 0; i < numOfWords; ++i)
+		{
+			initialHash = *p++; //Get the next number to hash.
+			unsigned protectedHash = protectionHash(initialHash, state); //Apply the extra protective hash on top of the initial hash.
+			int index = indexFor(protectedHash, size); //Get the index for the hash that matches the size of the current hash table
+			if (hashTable[index] == true) //If there is a collision
+				totalCollisions++;
+			else
+				hashTable[index] = true;
+		}
+		return totalCollisions;
+	}
+private:
+	vector<int> wordHashes;
+	int numOfWords;
+	bool* hashTable;
+	
+
+	int hashString(string s)
+	{
+		int hash = 0;
+		int n = s.size() - 1;
+		for (int i = 0; i <= n; i++)
+		{
+			//hash += s[i] * pow(31, n - i);
+			hash = s[i] + 31 * hash;
+		}
+		return hash;
 	}
 	
-	cout << "======================================" << endl
-		 << "     And the winning results are" << endl
-	     << "======================================" << endl;
+	/*
+	 * Gets the index into the hash table. Note: This function
+	 * has been inlined for some crazy performance improvements.
+	 */
+	inline int indexFor(unsigned h, int length)
+	{
+		return h & (length - 1);
+	}
+
+	/*
+	* Apply a protective hash to the original hash using the values x y z and w.
+	* Note: This function has been inlined for some crazy performance improvements.
+	*/
+	inline unsigned protectionHash(unsigned hash, State& state)
+	{
+		hash += ~(hash << state.x);//9
+		hash ^= (hash >> state.y);//14
+		hash += (hash << state.z);//4
+		hash ^= (hash >> state.w);//10
+		return hash;
+	}
+};
+
+class SimulateAnnealing
+{
+public:
+	SimulateAnnealing(Hash& hashValue, int limit = 30) : currentHash(hashValue)
+	{
+		upperLimit = limit;
+	} 
+	State simulate()
+	{
+		currentEnergy = currentHash.getCollisions(hashValues);
+		temperature = currentEnergy;
+		int runLimit = 400;
+		int alterationLimit = 40;
+
+		while (temperature > 1)
+		{
+			int successfulAlterations = anneal(runLimit, alterationLimit);
+			if (successfulAlterations == 0)
+			{
+				cout << "No alterations, exiting loop." << endl;
+				break;
+			}
+			temperature *= 0.9;
+
+			cout << "Temperature: " << temperature << endl;
+		}
+		cout << endl 
+			 << "======================================" << endl
+			 << " And the winning results are" << endl
+			 << "======================================" << endl;
+		printResults();
+		return hashValues;
+	}
+private:
+	Hash& currentHash;
+	State hashValues;
+	int currentEnergy;
+	double temperature;
+	int upperLimit;
+
+	void pickAlteration(State& alterations)
+	{
+		alterations.x = rand() % upperLimit;
+		alterations.y = rand() % upperLimit;
+		alterations.z = rand() % upperLimit;
+		alterations.w = rand() % upperLimit;
+	}
+
+	void printResults()
+	{
+		cout << hashValues.toString()
+			<< " With an energy of: " << currentEnergy << endl;
+	}
+	
+	void alterList(State& alteration, int newEnergy)
+	{
+		currentEnergy = newEnergy;
+		hashValues = alteration;
+	}
+	
+	bool oracle(int energyDiff)
+	{
+		if (energyDiff < 0)
+			return true;
+		if (exp((-energyDiff)/temperature) > (rand() % 2))
+			return true;
+		return false;
+	}
+
+	/*
+	* Returns the number of successful alterations made.
+	*/
+	int anneal(int runLimit, int alterationLimit)
+	{
+		int alterationCount = 10;
+		State alteration;
+		for (int i = 0; i <= runLimit; i++)
+		{
+			pickAlteration(alteration);
+			int newEnergy = currentHash.getCollisions(alteration);
+			int energyDiff = newEnergy - currentEnergy;
+			if (oracle(energyDiff))
+			{
+				alterList(alteration, newEnergy); //Commit changes
+				alterationCount++;
+			}
+			if (alterationCount >= alterationLimit)
+				break;
+		}
+		return alterationLimit;
+	}
+};
+
+void handleInput(int argc, string argv[])
+{
+	//upperlimit, hashSize, temperature decrease ratio, initial temperature
 }
 
-
-//try 4 numbers between 50-99
+//try 4 numbers between 50-99}
 int main(int argc, char* argv[])
 {
-	vector<string> wordList;
-	std::ifstream infile("C:\\Users\\Jonathan\\Desktop\\cs306\\good\\dictionary.txt");
-	string word;
-	while (infile >> word)
-	{
-		wordList.push_back(word);
-	}
-
-	words = &wordList[0];
-	numOfWords = wordList.size();
-
-	hashValues = new int[4];
-	hashValues[0] = 30;
-	hashValues[1] = 30;
-	hashValues[2] = 30;
-	hashValues[3] = 30;
-
-	simulateAnnealing();//initialSequence);
-	//int collisions = getCollisions(9, 14, 4, 10);
-	//cout << "Collisions: " << collisions << endl; 
+	Hash* h = new Hash("bigdictionary.txt");
+	SimulateAnnealing sa(*h, 30);
+	State res = sa.simulate();
+	delete h;
+	return 0;
 }
