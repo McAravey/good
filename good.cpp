@@ -10,7 +10,7 @@
 #include <cstring>
 using namespace std;
 
-#define windows
+//#define windows
 
 int size = 1048576;
 
@@ -136,7 +136,7 @@ public:
 	State simulate()
 	{
 		currentEnergy = currentHash.getCollisions(currentState);
-		temperature = currentEnergy;
+		temperature = 100000;//currentEnergy;
 		int runLimit = 400;
 		int alterationLimit = 40;
 
@@ -148,7 +148,7 @@ public:
 				cout << "No alterations, exiting loop." << endl;
 				break;
 			}
-			temperature *= 0.9;
+			temperature *= 0.95;
 
 			cout << "Temperature: " << temperature << endl;
 		}
@@ -257,6 +257,12 @@ int main(int argc, char* argv[])
 	int threadCount = 10;
 	//Hash* h = new Hash("bigdictionary.txt");
 	commonHash = new Hash("bigdictionary.txt");
+	State baseState;
+	baseState.x = 9;
+	baseState.y = 14;
+	baseState.z = 4;
+	baseState.w = 10;
+	cout << "BASE (x=9, y=14, z=4, w=10): " << commonHash->getCollisions(baseState) << endl << endl;
 
 #ifndef windows
 	vector<pthread_t> threads;
