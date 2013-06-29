@@ -1,35 +1,3 @@
-/*******************************
-* Exploration 5 - Good
-*
-* Samuel Mcaravey - mca12004
-* 
-*
-*******************************
-* LOG 
-*******************************
-* 
-* 
-* 
-* 
-* 
-* 6-27-2013
-* -Finished creating the C++ test harness.
-* -Ran the exact numbers through an equivilent 
-* Java program for verification.
-* -Discovered that energy is the number of collisions!
-* "It is also necessary
-* for you to be able to generate a number
-* that tells how well any given sequence
-* works; the better the solution, the smaller
-* this number must be. This number is
-* analogous to the energy of the crystal in
-* the crystal-growth example."
-* -Tried to turn the energy function into a memorizing function
-* to see if this will help avoid the plateu in small data sets.
-* 
-* 
-* 
-*/
 #include <stdlib.h>
 #include <cmath>
 #include <iostream>
@@ -41,6 +9,8 @@
 #include <sstream>
 #include <cstring>
 using namespace std;
+
+#define windows
 
 int size = 1048576;
 
@@ -69,14 +39,14 @@ public:
 	{ 
 		std::ifstream infile(dictionary.c_str());
 		string word;
-	
+
 		cout << "Initializing memory hash..." << endl;
 		while (infile >> word)
 		{
 			wordHashes.push_back(hashString(word));
 		}
 		cout << "Completed initializing memory hash." << endl;
-		
+
 		numOfWords = wordHashes.size();
 		hashTable = new bool[size];
 	}
@@ -96,7 +66,7 @@ public:
 		//Discovered this performance hit using Visual Studio
 		//   performance analysis tools.
 		int* p = &wordHashes[0];
-		
+
 
 		for(int i = 0; i < numOfWords; ++i)
 		{
@@ -114,7 +84,7 @@ private:
 	vector<int> wordHashes;
 	int numOfWords;
 	bool* hashTable;
-	
+
 
 	int hashString(string s)
 	{
@@ -127,11 +97,11 @@ private:
 		}
 		return hash;
 	}
-	
+
 	/*
-	 * Gets the index into the hash table. Note: This function
-	 * has been inlined for some crazy performance improvements.
-	 */
+	* Gets the index into the hash table. Note: This function
+	* has been inlined for some crazy performance improvements.
+	*/
 	inline int indexFor(unsigned h, int length)
 	{
 		return h & (length - 1);
@@ -158,9 +128,14 @@ public:
 	{
 		upperLimit = limit;
 	} 
+
+	/*
+	* Executes the simulated annealing algorithm.
+	* Returns the best state.
+	*/
 	State simulate()
 	{
-		currentEnergy = currentHash.getCollisions(hashValues);
+		currentEnergy = currentHash.getCollisions(currentState);
 		temperature = currentEnergy;
 		int runLimit = 400;
 		int alterationLimit = 40;
@@ -178,19 +153,27 @@ public:
 			cout << "Temperature: " << temperature << endl;
 		}
 		cout << endl 
-			 << "======================================" << endl
-			 << " And the winning results are" << endl
-			 << "======================================" << endl;
+			<< "======================================" << endl
+			<< " And the winning results are" << endl
+			<< "======================================" << endl;
 		printResults();
-		return hashValues;
+		return currentState;
+	}
+
+	void simulateSilent()
+	{
+		simulate();
 	}
 private:
 	Hash& currentHash;
-	State hashValues;
+	State currentState;
 	int currentEnergy;
 	double temperature;
 	int upperLimit;
 
+	/*
+	* Pick a new state to work with.
+	*/
 	void pickAlteration(State& alterations)
 	{
 		alterations.x = rand() % upperLimit;
@@ -201,22 +184,33 @@ private:
 
 	void printResults()
 	{
-		cout << hashValues.toString()
+		cout << currentState.toString()
 			<< " With an energy of: " << currentEnergy << endl;
 	}
-	
-	void alterList(State& alteration, int newEnergy)
+
+	/*
+	* Accept the new values as the current values.
+	* Commits changes.
+	*/
+	void alterList(State& alteredState, int newEnergy)
 	{
 		currentEnergy = newEnergy;
-		hashValues = alteration;
+		currentState = alteredState;
 	}
-	
+
+	/*
+	* Tell if the new energy difference is acceptable or not.
+	* The Boltzman factor allows for a certain tolerance of
+	* regression.
+	*/
 	bool oracle(int energyDiff)
 	{
 		if (energyDiff < 0)
 			return true;
+
 		if (exp((-energyDiff)/temperature) > (rand() % 2))
 			return true;
+
 		return false;
 	}
 
@@ -249,12 +243,47 @@ void handleInput(int argc, string argv[])
 	//upperlimit, hashSize, temperature decrease ratio, initial temperature
 }
 
+Hash* commonHash;
+
+void* work(void* data)
+{
+	SimulateAnnealing sa(*commonHash, 30);
+	sa.simulate();
+}
+
 //try 4 numbers between 50-99}
 int main(int argc, char* argv[])
 {
-	Hash* h = new Hash("bigdictionary.txt");
-	SimulateAnnealing sa(*h, 30);
-	State res = sa.simulate();
-	delete h;
+	int threadCount = 10;
+	//Hash* h = new Hash("bigdictionary.txt");
+	commonHash = new Hash("bigdictionary.txt");
+
+#ifndef windows
+	vector<pthread_t> threads;
+	//SimulateAnnealing sa(*h, 30);
+	//State res = sa.simulate();
+
+	for (int i = 0; i < threadCount; i++)
+	{      
+		pthread_t thread;
+		int result = pthread_create(&thread, NULL, work, NULL);
+		if (result != 0)
+			cout << "Error creating producer." << endl;
+
+		threads.push_back(thread);
+	}
+
+	bool success = true;
+
+	for (int i = 0; i < threads.size(); i++)
+	{
+		pthread_t thread = threads[i];
+		int result = pthread_join(thread, NULL);
+		if (result != 0) //Failure
+			success = false;
+	}
+#endif
+
+	delete commonHash;
 	return 0;
 }
