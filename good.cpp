@@ -48,14 +48,14 @@ public:
 		cout << "Completed initializing memory hash." << endl;
 
 		numOfWords = wordHashes.size();
-		hashTable = new bool[size];
+		//hashTable = new bool[size];
 	}
 	~Hash()
 	{
-		delete hashTable;
+		//delete hashTable;
 	}
 
-	int getCollisions(State& state)
+	int getCollisions(State& state, bool* hashTable)
 	{
 		memset(hashTable,0,sizeof(bool)*size);
 
@@ -80,10 +80,15 @@ public:
 		}
 		return totalCollisions;
 	}
+
+	int getSize()
+	{
+		return numOfWords;
+	}
 private:
 	vector<int> wordHashes;
 	int numOfWords;
-	bool* hashTable;
+	//bool* hashTable;
 
 
 	int hashString(string s)
@@ -127,7 +132,12 @@ public:
 	SimulateAnnealing(Hash& hashValue, int limit = 30) : currentHash(hashValue)
 	{
 		upperLimit = limit;
+		hashTable = new bool[size];
 	} 
+	~SimulateAnnealing()
+	{
+		delete hashTable;
+	}
 
 	/*
 	* Executes the simulated annealing algorithm.
@@ -135,7 +145,7 @@ public:
 	*/
 	State simulate()
 	{
-		currentEnergy = currentHash.getCollisions(currentState);
+		currentEnergy = currentHash.getCollisions(currentState, hashTable);
 		temperature = 100000;//currentEnergy;
 		int runLimit = 400;
 		int alterationLimit = 40;
@@ -170,6 +180,7 @@ private:
 	int currentEnergy;
 	double temperature;
 	int upperLimit;
+	bool* hashTable;
 
 	/*
 	* Pick a new state to work with.
@@ -224,7 +235,7 @@ private:
 		for (int i = 0; i <= runLimit; i++)
 		{
 			pickAlteration(alteration);
-			int newEnergy = currentHash.getCollisions(alteration);
+			int newEnergy = currentHash.getCollisions(alteration, hashTable);
 			int energyDiff = newEnergy - currentEnergy;
 			if (oracle(energyDiff))
 			{
@@ -257,17 +268,16 @@ int main(int argc, char* argv[])
 	int threadCount = 10;
 	//Hash* h = new Hash("bigdictionary.txt");
 	commonHash = new Hash("bigdictionary.txt");
+	bool* hashTable = new bool[size];
 	State baseState;
 	baseState.x = 9;
 	baseState.y = 14;
 	baseState.z = 4;
 	baseState.w = 10;
-	cout << "BASE (x=9, y=14, z=4, w=10): " << commonHash->getCollisions(baseState) << endl << endl;
+	cout << "BASE (x=9, y=14, z=4, w=10): " << commonHash->getCollisions(baseState, hashTable) << endl << endl;
 
 #ifndef windows
 	vector<pthread_t> threads;
-	//SimulateAnnealing sa(*h, 30);
-	//State res = sa.simulate();
 
 	for (int i = 0; i < threadCount; i++)
 	{      
@@ -290,6 +300,12 @@ int main(int argc, char* argv[])
 	}
 #endif
 
+#ifdef windows
+	SimulateAnnealing sa(*commonHash, 30);
+	State res = sa.simulate();
+#endif
+
+	delete hashTable;
 	delete commonHash;
 	return 0;
 }
