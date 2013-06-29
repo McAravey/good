@@ -36,7 +36,7 @@ class Hash
 {
 public:
 	Hash(string dictionary)
-	{ 
+	{
 		std::ifstream infile(dictionary.c_str());
 		string word;
 
@@ -55,9 +55,9 @@ public:
 		//delete hashTable;
 	}
 
-	int getCollisions(State& state, bool* hashTable)
+	double getStdDeviation(State& state, int* collisionMap)
 	{
-		memset(hashTable,0,sizeof(bool)*size);
+		memset(collisionMap,0,sizeof(int)*size);
 
 		int totalCollisions = 0; //Track the total number of collisions for finding the best
 		int initialHash = 0;
@@ -73,12 +73,32 @@ public:
 			initialHash = *p++; //Get the next number to hash.
 			unsigned protectedHash = protectionHash(initialHash, state); //Apply the extra protective hash on top of the initial hash.
 			int index = indexFor(protectedHash, size); //Get the index for the hash that matches the size of the current hash table
-			if (hashTable[index] == true) //If there is a collision
+			if (collisionMap[index] > 1) //If there is a collision
+			{
 				totalCollisions++;
+				collisionMap[index]++;
+			}
 			else
-				hashTable[index] = true;
+			{
+				collisionMap[index]++;
+			}
 		}
-		return totalCollisions;
+
+		//Calculate the standard deviation.
+		double sum = 0;
+		for (int i = 0; i < size; i++)
+		{
+			sum += collisionMap[i];
+		}
+		double mean = sum / size;
+		double sq_diff_sum = 0;
+		for (int i = 0; i < size; i++)
+		{
+			double diff = collisionMap[i] - mean;
+			sq_diff_sum += diff * diff;
+		}
+		double variance = sq_diff_sum / size;
+		return sqrt(variance);
 	}
 
 	int getSize()
@@ -132,11 +152,13 @@ public:
 	SimulateAnnealing(Hash& hashValue, int limit = 30) : currentHash(hashValue)
 	{
 		upperLimit = limit;
-		hashTable = new bool[size];
-	} 
+		//hashTable = new bool[size];
+		collisionMap = new int[size];
+	}
 	~SimulateAnnealing()
 	{
-		delete hashTable;
+		//delete hashTable;
+		delete collisionMap;
 	}
 
 	/*
@@ -145,7 +167,7 @@ public:
 	*/
 	State simulate()
 	{
-		currentEnergy = currentHash.getCollisions(currentState, hashTable);
+		currentEnergy = currentHash.getStdDeviation(currentState, collisionMap);
 		temperature = 100000;//currentEnergy;
 		int runLimit = 400;
 		int alterationLimit = 40;
@@ -162,7 +184,7 @@ public:
 
 			cout << "Temperature: " << temperature << endl;
 		}
-		cout << endl 
+		cout << endl
 			<< "======================================" << endl
 			<< " And the winning results are" << endl
 			<< "======================================" << endl;
@@ -177,10 +199,11 @@ public:
 private:
 	Hash& currentHash;
 	State currentState;
-	int currentEnergy;
+	double currentEnergy;
 	double temperature;
 	int upperLimit;
-	bool* hashTable;
+	//bool* hashTable;
+	int* collisionMap;
 
 	/*
 	* Pick a new state to work with.
@@ -214,7 +237,7 @@ private:
 	* The Boltzman factor allows for a certain tolerance of
 	* regression.
 	*/
-	bool oracle(int energyDiff)
+	bool oracle(double energyDiff)
 	{
 		if (energyDiff < 0)
 			return true;
@@ -235,8 +258,8 @@ private:
 		for (int i = 0; i <= runLimit; i++)
 		{
 			pickAlteration(alteration);
-			int newEnergy = currentHash.getCollisions(alteration, hashTable);
-			int energyDiff = newEnergy - currentEnergy;
+			double newEnergy = currentHash.getStdDeviation(alteration, collisionMap);
+			double energyDiff = newEnergy - currentEnergy;
 			if (oracle(energyDiff))
 			{
 				alterList(alteration, newEnergy); //Commit changes
@@ -268,19 +291,20 @@ int main(int argc, char* argv[])
 	int threadCount = 10;
 	//Hash* h = new Hash("bigdictionary.txt");
 	commonHash = new Hash("bigdictionary.txt");
-	bool* hashTable = new bool[size];
+	//bool* hashTable = new bool[size];
+	int* collisionMap = new int[size];
 	State baseState;
 	baseState.x = 9;
 	baseState.y = 14;
 	baseState.z = 4;
 	baseState.w = 10;
-	cout << "BASE (x=9, y=14, z=4, w=10): " << commonHash->getCollisions(baseState, hashTable) << endl << endl;
+	cout << "BASE (x=9, y=14, z=4, w=10): " << commonHash->getStdDeviation(baseState, collisionMap) << endl << endl;
 
 #ifndef windows
 	vector<pthread_t> threads;
 
 	for (int i = 0; i < threadCount; i++)
-	{      
+	{
 		pthread_t thread;
 		int result = pthread_create(&thread, NULL, work, NULL);
 		if (result != 0)
@@ -305,7 +329,7 @@ int main(int argc, char* argv[])
 	State res = sa.simulate();
 #endif
 
-	delete hashTable;
+	delete collisionMap;
 	delete commonHash;
 	return 0;
 }
