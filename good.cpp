@@ -431,6 +431,7 @@ Hash* commonHash; //The hash all threads will use.
 void* work(void* data)
 {
    int* algorithm = (int*) data;
+   cout << algorithm;
    SimulateAnnealing sa(*commonHash, 30, *algorithm);
    sa.simulate();
    delete algorithm;
