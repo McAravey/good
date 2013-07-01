@@ -10,7 +10,7 @@
 #include <cstring>
 using namespace std;
 
-#define windows
+//#define windows
 
 int size = 32768;//1048576;
 
@@ -70,7 +70,9 @@ public:
 
 	int getCollisions(State& state, bool* hashTable)
 	{
+		cout << "Calling memset" << endl;
 		memset(hashTable,0,sizeof(bool)*size);
+		cout << "Called memset" << endl;
 
 		int totalCollisions = 0; //Track the total number of collisions for finding the best
 		int initialHash = 0;
@@ -145,7 +147,9 @@ public:
 	SimulateAnnealing(Hash& hashValue, int limit = 30) : currentHash(hashValue)
 	{
 		upperLimit = limit;
+		cout << "Allocating" << endl;
 		hashTable = new bool[size];
+		cout << "Allocated" << endl;
 	} 
 	~SimulateAnnealing()
 	{
@@ -243,7 +247,7 @@ private:
 	*/
 	int anneal(int runLimit, int alterationLimit)
 	{
-		int alterationCount = 10;
+		int alterationCount = 0;
 		State alteration;
 		for (int i = 0; i <= runLimit; i++)
 		{
@@ -258,7 +262,7 @@ private:
 			if (alterationCount >= alterationLimit)
 				break;
 		}
-		return alterationLimit;
+		return alterationCount;
 	}
 };
 
@@ -267,44 +271,44 @@ void handleInput(int argc, string argv[])
 	//upperlimit, hashSize, temperature decrease ratio, initial temperature
 }
 
-Hash* commonHash;
+//Hash* commonHash;
 
 void* work(void* data)
 {
-	SimulateAnnealing sa(*commonHash, 30);
+	Hash* currentHash = (Hash*)data;
+//	cout << "Hash size: " << currentHash->getSize() << endl;
+	SimulateAnnealing sa(*currentHash, 30);
+	cout << "Starting simulation" << endl;
 	sa.simulate();
 }
 
-//try 4 numbers between 50-99}
-int main(int argc, char* argv[])
+
+vector<pthread_t> runSimulation(Hash* currentHash)
 {
-	int threadCount = 10;
-
-	commonHash = new Hash("bigdictionary.txt");
-	//commonHash = new Hash(32768);
-	bool* hashTable = new bool[size];
-	State baseState;
-	baseState.x = 9;
-	baseState.y = 14;
-	baseState.z = 4;
-	baseState.w = 10;
-	cout << "BASE (x=9, y=14, z=4, w=10): " << commonHash->getCollisions(baseState, hashTable) << endl << endl;
-
-#ifndef windows
+	int threadCount = 1;
 	vector<pthread_t> threads;
 
 	for (int i = 0; i < threadCount; i++)
 	{      
+		void* hashData = (void*)currentHash;
 		pthread_t thread;
-		int result = pthread_create(&thread, NULL, work, NULL);
+		int result = pthread_create(&thread, NULL, work, hashData);
 		if (result != 0)
 			cout << "Error creating producer." << endl;
 
 		threads.push_back(thread);
 	}
+//
+//#ifdef windows
+//	SimulateAnnealing sa(*currentHash, 30);
+//	State res = sa.simulate();
+//#endif
+}
 
+void waitAll(vector<pthread_t> threads)
+{
 	bool success = true;
-
+	
 	for (int i = 0; i < threads.size(); i++)
 	{
 		pthread_t thread = threads[i];
@@ -312,14 +316,48 @@ int main(int argc, char* argv[])
 		if (result != 0) //Failure
 			success = false;
 	}
-#endif
+}
 
-#ifdef windows
-	SimulateAnnealing sa(*commonHash, 30);
-	State res = sa.simulate();
-#endif
+//try 4 numbers between 50-99}
+int main(int argc, char* argv[])
+{
 
-	delete hashTable;
-	delete commonHash;
+	//Hash* hash1 = new Hash("bigdictionary.txt");
+	Hash* hash1 = new Hash(32768);
+//	Hash* hash2 = new Hash(32768);
+//	Hash* hash3 = new Hash(32768);
+	
+	vector<pthread_t> res1 = runSimulation(hash1);
+//	vector<pthread_t> res2 = runSimulation(hash2);
+//	vector<pthread_t> res3 = runSimulation(hash3);
+	
+//	cout << "Start inserting" << endl;
+//	vector<pthread_t> res;
+//	res.insert(res.end(), res1.begin(), res1.end());
+//	res.insert(res.end(), res2.begin(), res2.end());
+//	res.insert(res.end(), res3.begin(), res3.end());
+//	res2.insert(res2.end(), res3.begin(), res3.end());
+//	res1.insert(res1.end(), res2.begin(), res2.end());
+//	res.insert(res.end(), res3.begin(), res3.end());
+	
+//	cout << "Done inserting" << endl;
+	
+
+
+	//bool* hashTable = new bool[size];
+	//State baseState;
+	//baseState.x = 9;
+	//baseState.y = 14;
+	//baseState.z = 4;
+	//baseState.w = 10;
+	//cout << "BASE (x=9, y=14, z=4, w=10): " << commonHash->getCollisions(baseState, hashTable) << endl << endl;
+
+   waitAll(res1);
+//   waitAll(res2);
+//   waitAll(res3);
+
+	delete hash1;
+//	delete hash2;
+//	delete hash3;
 	return 0;
 }
