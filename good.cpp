@@ -8,9 +8,10 @@
 #include <vector>
 #include <sstream>
 #include <cstring>
+#include <ctime>
 using namespace std;
 
-//#define windows
+#define windows
 
 int size = 32768;//1048576;
 
@@ -35,74 +36,10 @@ struct State
 class Hash
 {
 public:
-	Hash(string dictionary)
-	{ 
-		std::ifstream infile(dictionary.c_str());
-		string word;
-
-		cout << "Initializing memory hash..." << endl;
-		while (getline(infile, word))
-		{
-			wordHashes.push_back(hashString(word));
-		}
-		cout << "Completed initializing memory hash." << endl;
-
-		numOfWords = wordHashes.size();
-		//hashTable = new bool[size];
-	}
-
-	Hash(int inputSize)
-	{ 
-		cout << "Initializing memory hash..." << endl;
-		for (int i = 0; i < inputSize; i++)
-		{
-			wordHashes.push_back(rand());
-		}
-		cout << "Completed initializing memory hash." << endl;
-
-		numOfWords = inputSize;
-		//hashTable = new bool[size];
-	}
-	~Hash()
-	{
-		//delete hashTable;
-	}
-
-	int getCollisions(State& state, bool* hashTable)
-	{
-		cout << "Calling memset" << endl;
-		memset(hashTable,0,sizeof(bool)*size);
-		cout << "Called memset" << endl;
-
-		int totalCollisions = 0; //Track the total number of collisions for finding the best
-		int initialHash = 0;
-
-		//Treat the vector as an array for fast indexing.
-		//Discovered this performance hit using Visual Studio
-		//   performance analysis tools.
-		int* p = &wordHashes[0];
-
-
-		for(int i = 0; i < numOfWords; ++i)
-		{
-			initialHash = *p++; //Get the next number to hash.
-			unsigned protectedHash = protectionHash(initialHash, state); //Apply the extra protective hash on top of the initial hash.
-			int index = indexFor(protectedHash, size); //Get the index for the hash that matches the size of the current hash table
-			if (hashTable[index] == true) //If there is a collision
-				totalCollisions++;
-			else
-				hashTable[index] = true;
-		}
-		return totalCollisions;
-	}
-
-	int getSize()
-	{
-		return numOfWords;
-	}
-private:
-	vector<int> wordHashes;
-	int numOfWords;
+	virtual ~Hash(){};
+	virtual int getCollisions(State& state, bool* hashTable) = 0;
+	virtual int getSize() = 0;
+protected:
 	//bool* hashTable;
 
 
@@ -141,6 +78,143 @@ private:
 	}
 };
 
+class SingleHash : public Hash
+{
+public:
+	SingleHash(string dictionary)
+	{ 
+		std::ifstream infile(dictionary.c_str());
+		string word;
+
+		cout << "Initializing memory hash..." << endl;
+		while (getline(infile, word))
+		{
+			wordHashes.push_back(hashString(word));
+		}
+		cout << "Completed initializing memory hash." << endl;
+
+		numOfWords = wordHashes.size();
+		//hashTable = new bool[size];
+	}
+
+	SingleHash(int inputSize)
+	{ 
+		cout << "Initializing memory hash..." << endl;
+		for (int i = 0; i < inputSize; i++)
+		{
+			wordHashes.push_back(rand());
+		}
+		cout << "Completed initializing memory hash." << endl;
+
+		numOfWords = inputSize;
+	}
+
+	virtual int getCollisions(State& state, bool* hashTable)
+	{
+		memset(hashTable,0,sizeof(bool)*size);
+
+		int totalCollisions = 0; //Track the total number of collisions for finding the best
+		int initialHash = 0;
+
+		//Treat the vector as an array for fast indexing.
+		//Discovered this performance hit using Visual Studio
+		//   performance analysis tools.
+		int* p = &wordHashes[0];
+
+
+		for(int i = 0; i < numOfWords; ++i)
+		{
+			initialHash = *p++; //Get the next number to hash.
+			unsigned protectedHash = protectionHash(initialHash, state); //Apply the extra protective hash on top of the initial hash.
+			int index = indexFor(protectedHash, size); //Get the index for the hash that matches the size of the current hash table
+			if (hashTable[index] == true) //If there is a collision
+				totalCollisions++;
+			else
+				hashTable[index] = true;
+		}
+		return totalCollisions;
+	}
+
+	int getSize()
+	{
+		return numOfWords;
+	}
+private:
+	vector<int> wordHashes;
+	int numOfWords;
+};
+
+class MultiHash : public Hash
+{
+public:
+	MultiHash(int inputSize, int numberOfInputs)
+	{ 
+		cout << "Initializing memory hash..." << endl;
+		
+		for (int i = 0; i < numberOfInputs; i++)
+		{
+			vector<int> currentSet;
+			srand((unsigned)time(0));
+			for (int i = 0; i < inputSize; i++)			
+				currentSet.push_back(rand());			
+			
+			hashSets.push_back(currentSet);
+		}		
+		
+		cout << "Completed initializing memory hash." << endl;
+
+		numberOfSets = numberOfInputs;
+		setSize = inputSize;
+	}
+
+	int getCollisions(State& state, bool* hashTable)
+	{
+		int totalCollisions = 0;
+		for (int i = 0; i < numberOfSets; i++)
+		{
+			totalCollisions += getCollisionsForSet(state, hashTable, &hashSets[i][0]);
+		}
+		return totalCollisions / numberOfSets;
+	}
+
+	int getSize()
+	{
+		return setSize * numberOfSets;
+	}
+private:
+	vector<vector<int>> hashSets;
+	int setSize;
+	int numberOfSets;
+	
+
+	int getCollisionsForSet(State& state, bool* hashTable, int* p)
+	{
+		memset(hashTable,0,sizeof(bool)*size);
+
+		int totalCollisions = 0; //Track the total number of collisions for finding the best
+		int initialHash = 0;
+
+		//Treat the vector as an array for fast indexing.
+		//Discovered this performance hit using Visual Studio
+		//   performance analysis tools.
+		//int* p = &wordHashes[0];
+
+
+		for(int i = 0; i < setSize; ++i)
+		{
+			initialHash = *p++; //Get the next number to hash.
+			unsigned protectedHash = protectionHash(initialHash, state); //Apply the extra protective hash on top of the initial hash.
+			int index = indexFor(protectedHash, size); //Get the index for the hash that matches the size of the current hash table
+			if (hashTable[index] == true) //If there is a collision
+				totalCollisions++;
+			else
+				hashTable[index] = true;
+		}
+		return totalCollisions;
+	}
+
+};
+
 class SimulateAnnealing
 {
 public:
@@ -164,7 +238,7 @@ public:
 	{
 		currentEnergy = currentHash.getCollisions(currentState, hashTable);
 		temperature = 1000000;//currentEnergy;
-		int runLimit = 400;
+		int runLimit = 1000;
 		int alterationLimit = 40;
 
 		while (temperature > 1)
@@ -204,6 +278,35 @@ private:
 	*/
 	void pickAlteration(State& alterations)
 	{
+		srand((unsigned)time(0));
+
+		//int index = rand() % 4;
+		//int add = rand() % 2;
+		//int value = 0;
+
+		//if (add == 0)
+		//	value = 1;
+		//else
+		//	value = -1;
+
+		//switch (index)
+		//{
+		//case 0:
+		//	alterations.x += value;
+		//	break;
+		//case 1:
+		//	alterations.y += value;
+		//	break;
+		//case 2:
+		//	alterations.z += value;
+		//	break;
+		//case 3:
+		//	alterations.w += value;
+		//	break;
+		//default:
+		//	break;
+		//}
+
 		alterations.x = rand() % upperLimit;
 		alterations.y = rand() % upperLimit;
 		alterations.z = rand() % upperLimit;
@@ -271,19 +374,19 @@ void handleInput(int argc, string argv[])
 	//upperlimit, hashSize, temperature decrease ratio, initial temperature
 }
 
-//Hash* commonHash;
+//SingleHash* commonHash;
 
 void* work(void* data)
 {
-	Hash* currentHash = (Hash*)data;
-//	cout << "Hash size: " << currentHash->getSize() << endl;
+	SingleHash* currentHash = (SingleHash*)data;
+//	cout << "SingleHash size: " << currentHash->getSize() << endl;
 	SimulateAnnealing sa(*currentHash, 30);
 	cout << "Starting simulation" << endl;
 	sa.simulate();
 }
 
-
-vector<pthread_t> runSimulation(Hash* currentHash)
+#ifndef windows
+vector<pthread_t> runSimulation(SingleHash* currentHash)
 {
 	int threadCount = 1;
 	vector<pthread_t> threads;
@@ -298,11 +401,6 @@ vector<pthread_t> runSimulation(Hash* currentHash)
 
 		threads.push_back(thread);
 	}
-//
-//#ifdef windows
-//	SimulateAnnealing sa(*currentHash, 30);
-//	State res = sa.simulate();
-//#endif
 }
 
 void waitAll(vector<pthread_t> threads)
@@ -317,17 +415,27 @@ void waitAll(vector<pthread_t> threads)
 			success = false;
 	}
 }
+#endif
+#ifdef windows
+State runSimulation(Hash* currentHash)
+{
+	SimulateAnnealing sa(*currentHash, 30);
+	State res = sa.simulate();
+	return res;
+}
+#endif
 
 //try 4 numbers between 50-99}
 int main(int argc, char* argv[])
 {
 
-	//Hash* hash1 = new Hash("bigdictionary.txt");
-	Hash* hash1 = new Hash(32768);
-//	Hash* hash2 = new Hash(32768);
-//	Hash* hash3 = new Hash(32768);
+	//SingleHash* hash1 = new SingleHash("bigdictionary.txt");
+	MultiHash* hash1 = new MultiHash(32768, 3);
+	runSimulation(hash1);
+//	SingleHash* hash2 = new SingleHash(32768);
+//	SingleHash* hash3 = new SingleHash(32768);
 	
-	vector<pthread_t> res1 = runSimulation(hash1);
+	//vector<pthread_t> res1 = runSimulation(hash1);
 //	vector<pthread_t> res2 = runSimulation(hash2);
 //	vector<pthread_t> res3 = runSimulation(hash3);
 	
@@ -352,7 +460,7 @@ int main(int argc, char* argv[])
 	//baseState.w = 10;
 	//cout << "BASE (x=9, y=14, z=4, w=10): " << commonHash->getCollisions(baseState, hashTable) << endl << endl;
 
-   waitAll(res1);
+	//waitAll(res1);
 //   waitAll(res2);
 //   waitAll(res3);
 
