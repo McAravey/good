@@ -79,7 +79,6 @@ public:
    Hash(int inputSize)
    {
       cout << "Initializing memory hash..." << endl;
-      srand(time(NULL));
       for (int i = 0; i < inputSize; i++)
       {
          wordHashes.push_back(rand());
@@ -320,7 +319,6 @@ private:
    ****************************************************************************/
    void pickAlteration(State& alterations)
    {
-      srand(time(NULL));
       alterations.x = rand() % upperLimit;
       alterations.y = rand() % upperLimit;
       alterations.z = rand() % upperLimit;
@@ -333,7 +331,15 @@ private:
    void printResults()
    {
       cout << currentState.toString()
-         << " With an energy of: " << currentEnergy << endl;
+         << " With an energy of: ";
+      if (mAlgorithm == 1)
+      {
+    		cout << currentEnergy << endl;
+      }
+      else if (mAlgorithm == 2)
+      {
+      	cout << currentEnergyDev << endl;
+      }
    }
 
    /****************************************************************************
@@ -347,13 +353,22 @@ private:
    }
 
    /****************************************************************************
+   * Accept the new values as the current values.
+   * Commits changes. Uses doubles for this one.
+   ****************************************************************************/
+   void alterList(State& alteredState, double newEnergyDeviation)
+   {
+   	currentEnergyDev = newEnergyDeviation;
+   	currentState = alteredState;
+   }
+
+   /****************************************************************************
    * Tell if the new energy difference is acceptable or not.
    * The Boltzman factor allows for a certain tolerance of
    * regression.
    ****************************************************************************/
    bool oracle(int energyDiff)
    {
-      srand(time(NULL));
       if (energyDiff < 0)
          return true;
 
@@ -369,7 +384,6 @@ private:
    *******************************************************************************/
    bool oracle(double energyDiff)
    {
-      srand(time(NULL));
       if (energyDiff < 0)
          return true;
 
@@ -412,8 +426,6 @@ private:
             }
          }
 
-
-
          if (alterationCount >= alterationLimit)
             break;
       }
@@ -444,6 +456,7 @@ void* work(void* data)
 *******************************************************************************/
 int menuPrompt()
 {
+	srand(time(NULL));
    cout << "\nWelcome to the Goodness tester." << endl;
    cout << "Select from the choices below to proceed:" << endl;
    cout << "\t1. Use # of collisions as the energy. (faster)" << endl;
