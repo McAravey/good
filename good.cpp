@@ -82,7 +82,7 @@ class SingleHash : public Hash
 {
 public:
 	SingleHash(string dictionary)
-	{ 
+	{
 		std::ifstream infile(dictionary.c_str());
 		string word;
 
@@ -98,7 +98,7 @@ public:
 	}
 
 	SingleHash(int inputSize)
-	{ 
+	{
 		cout << "Initializing memory hash..." << endl;
 		for (int i = 0; i < inputSize; i++)
 		{
@@ -148,19 +148,19 @@ class MultiHash : public Hash
 {
 public:
 	MultiHash(int inputSize, int numberOfInputs)
-	{ 
+	{
 		cout << "Initializing memory hash..." << endl;
-		
+
 		for (int i = 0; i < numberOfInputs; i++)
 		{
 			vector<int> currentSet;
 			srand((unsigned)time(0));
-			for (int i = 0; i < inputSize; i++)			
-				currentSet.push_back(rand());			
-			
+			for (int i = 0; i < inputSize; i++)
+				currentSet.push_back(rand());
+
 			hashSets.push_back(currentSet);
-		}		
-		
+		}
+
 		cout << "Completed initializing memory hash." << endl;
 
 		numberOfSets = numberOfInputs;
@@ -182,10 +182,10 @@ public:
 		return setSize * numberOfSets;
 	}
 private:
-	vector<vector<int>> hashSets;
+	vector<vector<int> > hashSets;
 	int setSize;
 	int numberOfSets;
-	
+
 
 	int getCollisionsForSet(State& state, bool* hashTable, int* p)
 	{
@@ -224,7 +224,7 @@ public:
 		cout << "Allocating" << endl;
 		hashTable = new bool[size];
 		cout << "Allocated" << endl;
-	} 
+	}
 	~SimulateAnnealing()
 	{
 		delete hashTable;
@@ -253,7 +253,7 @@ public:
 
 			cout << "Temperature: " << temperature << endl;
 		}
-		cout << endl 
+		cout << endl
 			<< "======================================" << endl
 			<< " And the winning results are" << endl
 			<< "======================================" << endl;
@@ -392,7 +392,7 @@ vector<pthread_t> runSimulation(SingleHash* currentHash)
 	vector<pthread_t> threads;
 
 	for (int i = 0; i < threadCount; i++)
-	{      
+	{
 		void* hashData = (void*)currentHash;
 		pthread_t thread;
 		int result = pthread_create(&thread, NULL, work, hashData);
@@ -406,7 +406,7 @@ vector<pthread_t> runSimulation(SingleHash* currentHash)
 void waitAll(vector<pthread_t> threads)
 {
 	bool success = true;
-	
+
 	for (int i = 0; i < threads.size(); i++)
 	{
 		pthread_t thread = threads[i];
@@ -434,11 +434,11 @@ int main(int argc, char* argv[])
 	runSimulation(hash1);
 //	SingleHash* hash2 = new SingleHash(32768);
 //	SingleHash* hash3 = new SingleHash(32768);
-	
+
 	//vector<pthread_t> res1 = runSimulation(hash1);
 //	vector<pthread_t> res2 = runSimulation(hash2);
 //	vector<pthread_t> res3 = runSimulation(hash3);
-	
+
 //	cout << "Start inserting" << endl;
 //	vector<pthread_t> res;
 //	res.insert(res.end(), res1.begin(), res1.end());
@@ -447,9 +447,9 @@ int main(int argc, char* argv[])
 //	res2.insert(res2.end(), res3.begin(), res3.end());
 //	res1.insert(res1.end(), res2.begin(), res2.end());
 //	res.insert(res.end(), res3.begin(), res3.end());
-	
+
 //	cout << "Done inserting" << endl;
-	
+
 
 
 	//bool* hashTable = new bool[size];
