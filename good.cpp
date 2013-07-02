@@ -11,7 +11,12 @@
 #include <ctime>
 using namespace std;
 
-#define windows
+/*
+  Uncomment this to run in a single thread, or to run on a windows machine
+  or any machine without p_thread support.
+ */
+//#define windows;
+
 
 /*******************************************************************************
 * Global Constants
@@ -443,10 +448,8 @@ Hash* commonHash; //The hash all threads will use.
 void* work(void* data)
 {
    int* algorithm = (int*) data;
-   cout << algorithm;
    SimulateAnnealing sa(*commonHash, 30, *algorithm);
    sa.simulate();
-   delete algorithm;
 }
 
 
@@ -459,7 +462,7 @@ int menuPrompt()
 	srand(time(NULL));
    cout << "\nWelcome to the Goodness tester." << endl;
    cout << "Select from the choices below to proceed:" << endl;
-   cout << "\t1. Use # of collisions as the energy. (faster)" << endl;
+   cout << "\t1. Use # of collisions as the energy." << endl;
    cout << "\t2. Use standard deviation as the energy." << endl;
    cout << "\t3. Exit";
 
@@ -507,6 +510,7 @@ int main(int argc, char* argv[])
    int* collisionMap = new int[SIZE];
 
    int algorithm = menuPrompt();
+   void* threadData = (void*) &algorithm;
 
    //Decide what should be done next based on the users choices.
    switch (algorithm)
@@ -534,7 +538,7 @@ int main(int argc, char* argv[])
    for (int i = 0; i < threadCount; i++)
    {
       pthread_t thread;
-      int result = pthread_create(&thread, NULL, work, (void*) algorithm);
+      int result = pthread_create(&thread, NULL, work, threadData);
       if (result != 0)
          cout << "Error creating producer." << endl;
 
@@ -553,7 +557,7 @@ int main(int argc, char* argv[])
 #endif
 
 #ifdef windows
-   SimulateAnnealing sa(*commonHash, 30);
+   SimulateAnnealing sa(*commonHash, 30, algorithm);
    State res = sa.simulate();
 #endif
 
